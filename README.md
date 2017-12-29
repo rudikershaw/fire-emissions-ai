@@ -6,7 +6,7 @@ Fire Emissions AI is an [artificial neural network](https://en.wikipedia.org/wik
 
 1. You will need [Python 3.6](https://www.python.org/downloads/) or greater installed.
 2. Install Pipenv, if you do not already have it, with `$ pip install --user pipenv`.
-3. Run the project with `$ pipenv run python fire.py`.
+3. Run the project with `$ pipenv run python predictor/predict.py`.
 
 # References
 
