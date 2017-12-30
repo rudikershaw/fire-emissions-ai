@@ -7,7 +7,7 @@ from pathlib import Path
 # -------------------------------------------------
 
 def print_help_text():
-    print("\nThe processor.py utility is designed to take a single argument, the path")
+    print("The processor.py utility is designed to take a single argument, the path")
     print("to a NASA EarthData Global Fire Emissions Database GFED4.1s_yyyy.hdf5 file.")
     print("Example - $ ./preprocess.py some/directory/GFED4.1s_2015.hdf5\n")
 
@@ -17,7 +17,8 @@ def print_help_text():
 
     print("By default the new files will be ouput to the same directory that contains")
     print("the script. Alternatively, you can provide a second argument with a path to")
-    print("another directory for the output files to be placed in.\n")
+    print("another directory for the output files to be placed in.")
+
 
 def valid_hdf_file(path_string):
     valid_extensions = ("hdf","hdf4","hdf5","h4","h5", "he2", "he5")
@@ -31,6 +32,7 @@ def valid_hdf_file(path_string):
         print("\nThe input file must be an HDF file with a correct extension.\n")
         return False
 
+
 def valid_arguments(arguements):
     args = len(arguements)
     if (args == 2 or args == 3) and arguements[1] != "--help":
@@ -40,17 +42,46 @@ def valid_arguments(arguements):
         print_help_text()
         return False
 
+
+def valid_leaf_groups(group, month, hdf_file):
+    groups_and_leaves = {"biosphere": ("BB", "NPP", "Rh")}
+    groups_and_leaves["burned_area"] = ("burned_fraction",)
+    groups_and_leaves["emissions"] = ("C", "DM")
+    valid = True
+    for leaf in groups_and_leaves[group]:
+        full_group = group + "/" + ("%02d" % month) + "/" + leaf
+        if full_group not in hdf_file:
+            valid = False
+            print(full_group + " not in HDF file.")
+    return valid
+
+
+def valid_hdf_structure(hdf_file):
+    valid = True
+    data_by_month = ("biosphere", "burned_area", "emissions")
+    for group in data_by_month:
+        for month in range(1,13):
+            full_group = group + "/" + ("%02d" % month)
+            if full_group not in hdf_file:
+                valid = False
+                print(full_group + " not in HDF file.")
+            else:
+                valid = valid and valid_leaf_groups(group, month, hdf_file)
+    return valid
+
 # -------------------------------------------------
 # Script starts here.
 # -------------------------------------------------
 
 if __name__ == "__main__":
-    if valid_arguments(sys.argv):
-        print("\nProcessing file...")
-        filename = sys.argv[1]
-        hdf_file = h5py.File(filename, 'r')
-
-        for name in hdf_file:
-            print(name)
-    else:
+    if not valid_arguments(sys.argv):
         sys.exit()
+
+    filename = sys.argv[1]
+    print("Processing - " + filename)
+    hdf_file = h5py.File(filename, 'r')
+
+    if not valid_hdf_structure(hdf_file):
+        sys.exit()
+
+    print("Basic structure of hdf file confirmed to conform to GFED4 format.")
