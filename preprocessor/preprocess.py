@@ -1,4 +1,5 @@
 import sys
+import h5py
 from pathlib import Path
 
 # -------------------------------------------------
@@ -10,7 +11,7 @@ def print_help_text():
     print("to a NASA EarthData Global Fire Emissions Database GFED4.1s_yyyy.hdf5 file.")
     print("Example - $ ./preprocess.py some/directory/GFED4.1s_2015.hdf5\n")
 
-    print("If a valid file path is passed to the utility it should output individual")
+    print("If a valid file path is passed to the utility it should output individual JSO")
     print("files for each month, that contain data in the format required to train the")
     print("emissions predictor.\n")
 
@@ -46,5 +47,10 @@ def valid_arguments(arguements):
 if __name__ == "__main__":
     if valid_arguments(sys.argv):
         print("\nProcessing file...")
+        filename = sys.argv[1]
+        hdf_file = h5py.File(filename, 'r')
+
+        for name in hdf_file:
+            print(name)
     else:
         sys.exit()
