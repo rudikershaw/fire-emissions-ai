@@ -24,3 +24,6 @@ class TestValidator(TestCase):
         hdf5_file = h5py.File(tmp_file, "w")
         # Providing empty hdf5 file is not valid.
         self.assertFalse(Validator.valid_hdf_structure(hdf5_file))
+        hdf5_file = h5py.File("tests/resources/min.hdf5", "r")
+        # Providing GFED format hdf file is valid.
+        self.assertTrue(Validator.valid_hdf_structure(hdf5_file))
