@@ -38,7 +38,7 @@ setup(
     install_requires=REQUIRED,
     include_package_data=True,
     license='APACHE 2.0',
-    test_suite='fireemissionsai.tests',
+    test_suite='tests',
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',

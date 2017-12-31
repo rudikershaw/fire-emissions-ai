@@ -16,7 +16,7 @@ class TestValidator(TestCase):
         # It is not valid to provide a file that does not exist.
         self.assertFalse(Validator.valid_arguments(["filename", "file_doesnt_exist.hdf5"]))
         # It is valid to provide a hdf file that actually exists.
-        self.assertTrue(Validator.valid_arguments(["filename", "fireemissionsai/tests/resources/empty.hdf5"]))
+        self.assertTrue(Validator.valid_arguments(["filename", "tests/resources/empty.hdf5"]))
 
     # Test the Validator.valid_hdf_file and valid_leaf_groups functions.
     def test_valid_hdf_structure(self):
