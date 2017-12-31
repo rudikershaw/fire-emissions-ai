@@ -3,9 +3,9 @@ import h5py
 from pathlib import Path
 
 # -------------------------------------------------
-# Functions defined below.
+# Utility functions class defined below.
 # -------------------------------------------------
-class Preprocessor:
+class Validator:
     def print_help_text():
         print("The processor.py utility is designed to take a single argument, the path")
         print("to a NASA EarthData Global Fire Emissions Database GFED4.1s_yyyy.hdf5 file.")
@@ -37,9 +37,9 @@ class Preprocessor:
         args = len(arguements)
         if (args == 2 or args == 3) and arguements[1] != "--help":
             path_to_data = arguements[1]
-            return Preprocessor.valid_hdf_file(path_to_data)
+            return Validator.valid_hdf_file(path_to_data)
         else:
-            Preprocessor.print_help_text()
+            Validator.print_help_text()
             return False
 
 
@@ -71,7 +71,7 @@ class Preprocessor:
                     valid = False
                     print("Expected group '" + full_group + "' not in HDF file.")
                 else:
-                    valid = valid and Preprocessor.valid_leaf_groups(group, month, hdf_file)
+                    valid = valid and Validator.valid_leaf_groups(group, month, hdf_file)
         return valid
 
 # -------------------------------------------------
@@ -79,14 +79,14 @@ class Preprocessor:
 # -------------------------------------------------
 
 if __name__ == "__main__":
-    if not Preprocessor.valid_arguments(sys.argv):
+    if not Validator.valid_arguments(sys.argv):
         sys.exit()
 
     filename = sys.argv[1]
     print("Processing - " + filename)
     hdf_file = h5py.File(filename, 'r')
 
-    if not Preprocessor.valid_hdf_structure(hdf_file):
+    if not Validator.valid_hdf_structure(hdf_file):
         sys.exit()
 
     print("Basic structure of hdf file confirmed to conform to GFED4 format.")

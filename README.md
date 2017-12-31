@@ -6,9 +6,9 @@ Fire Emissions AI is an [artificial neural network](https://en.wikipedia.org/wik
 
 1. You will need [Python 3.6](https://www.python.org/downloads/) or greater installed.
 2. Install Pipenv, if you do not already have it, with `$ pip install --user pipenv`.
-3. Run the project with `$ pipenv run python predictor/predict.py`.
+3. Run the project with `$ pipenv run python fireemissionsai/predictor/predict.py`.
 
-The repository contains two main folders; `predictor` and `preprocessor`. The former contains the code relating to the neural network directly (including training, testing, and eventually predicting), the latter contains the code for a utility used to convert the Global Fire Emissions Database files into training examples for the predictor.
+The repository contains two main folders; `fireemissionsai/predictor` and `fireemissionsai/preprocessor`. The former contains the code relating to the neural network directly (including training, testing, and eventually predicting), the latter contains the code for a utility used to convert the Global Fire Emissions Database files into training examples for the predictor.
 
 # References
 
