@@ -9,6 +9,8 @@ name = "pypi"
 
 tensorflow = "*"
 "h5py" = "*"
+pipenv = "*"
+tables = "*"
 
 
 [dev-packages]
