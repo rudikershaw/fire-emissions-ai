@@ -1,6 +1,4 @@
-import sys
-import h5py
-import itertools
+import io, sys, h5py, json, itertools
 from pathlib import Path
 
 # -------------------------------------------------
@@ -104,6 +102,22 @@ if __name__ == "__main__":
     longitude = hdf_file["lon"]
     regions = hdf_file["ancill/basis_regions"]
     matrix_shape = regions.shape
-    for i, j in itertools.product(range(matrix_shape[0]), range(matrix_shape[1])):
-        if regions[i][j] != 0:
-            print("Lat - Lon : " + latitude[i][j] + " " + longitude[i][j])
+    first = True
+
+    print("Writing to preprocess-output.json file. This might take a while...")
+
+    with io.open("preprocess-output.json", "w", encoding='utf-8') as output:
+        output.write("[\n")
+        for i, j in itertools.product(range(matrix_shape[0]), range(matrix_shape[1])):
+            if regions[i][j] != 0:
+                for month in range(1, 13):
+                    if not first:
+                        output.write(",\n")
+
+                    entry = {
+                        "latitude" : str(latitude[i][j]),
+                        "longitude" : str(longitude[i][j])
+                    }
+                    json.dump(entry, output)
+                    first = False
+        output.write("\n]")
