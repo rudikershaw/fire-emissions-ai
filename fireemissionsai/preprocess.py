@@ -26,7 +26,7 @@ class Validator:
 
     @staticmethod
     def valid_hdf_file(path_string):
-        valid_extensions = ("hdf","hdf4","hdf5","h4","h5", "he2", "he5")
+        valid_extensions = "hdf","hdf4","hdf5","h4","h5", "he2", "he5"
         if path_string.split(".")[-1].lower() in valid_extensions:
             if Path(path_string).is_file():
                 return True
@@ -64,11 +64,11 @@ class Validator:
     @staticmethod
     def valid_hdf_structure(hdf_file):
         valid = True
-        for group in ("ancill/basis_regions", "lon", "lat"):
+        for group in "ancill/basis_regions", "lon", "lat":
             if group not in hdf_file:
                 valid = False
                 print("Expected group '" + group + "' not in HDF file.")
-        for group in ("biosphere", "burned_area", "emissions"):
+        for group in "biosphere", "burned_area", "emissions":
             for month in range(1,13):
                 full_group = "{}/{:02d}".format(group, month)
                 if full_group not in hdf_file:
@@ -77,6 +77,35 @@ class Validator:
                 else:
                     valid = valid and Validator.valid_leaf_groups(group, month, hdf_file)
         return valid
+
+
+class GFEDtoJsonOutputWriter:
+
+    def __init__(self, hdf_file):
+        self.regions = hdf_file["ancill/basis_regions"]
+        self.latitude = hdf_file["lat"]
+        self.longitude = hdf_file["lon"]
+        self.matrix_shape = self.regions.shape
+
+    def write(self):
+        print("Writing to preprocess-output.json file. This might take a while...")
+        with io.open("preprocess-output.json", "w", encoding='utf-8') as output:
+            output.write("[\n")
+            first_entry = True
+            for i, j in itertools.product(range(self.matrix_shape[0]), range(self.matrix_shape[1])):
+                if self.regions[i][j] != 0:
+                    for month in range(1, 13):
+                        if not first_entry:
+                            output.write(",\n")
+
+                        entry = {
+                            "month" : str("{:02d}".format(month)),
+                            "latitude" : str(self.latitude[i][j]),
+                            "longitude" : str(self.longitude[i][j])
+                        }
+                        json.dump(entry, output)
+                        first_entry = False
+            output.write("\n]")
 
 # -------------------------------------------------
 # Script starts here.
@@ -95,27 +124,5 @@ if __name__ == "__main__":
 
     print("Basic structure of hdf file confirmed to conform to GFED4 format.")
 
-    latitude = hdf_file["lat"]
-    longitude = hdf_file["lon"]
-    regions = hdf_file["ancill/basis_regions"]
-    matrix_shape = regions.shape
-    first = True
-
-    print("Writing to preprocess-output.json file. This might take a while...")
-
-    with io.open("preprocess-output.json", "w", encoding='utf-8') as output:
-        output.write("[\n")
-        for i, j in itertools.product(range(matrix_shape[0]), range(matrix_shape[1])):
-            if regions[i][j] != 0:
-                for month in range(1, 13):
-                    if not first:
-                        output.write(",\n")
-
-                    entry = {
-                        "month" : str("{:02d}".format(month)),
-                        "latitude" : str(latitude[i][j]),
-                        "longitude" : str(longitude[i][j])
-                    }
-                    json.dump(entry, output)
-                    first = False
-        output.write("\n]")
+    writer = GFEDtoJsonOutputWriter(hdf_file)
+    writer.write()
