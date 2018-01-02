@@ -82,30 +82,46 @@ class Validator:
 class GFEDtoJsonOutputWriter:
 
     def __init__(self, hdf_file):
+        self.hdf = hdf_file
         self.regions = hdf_file["ancill/basis_regions"]
         self.latitude = hdf_file["lat"]
         self.longitude = hdf_file["lon"]
         self.matrix_shape = self.regions.shape
 
-    def write(self):
+
+    def write(self, output_path="preprocess-output.json"):
         print("Writing to preprocess-output.json file. This might take a while...")
-        with io.open("preprocess-output.json", "w", encoding='utf-8') as output:
+        with io.open(output_path, "w", encoding='utf-8') as output:
             output.write("[\n")
             first_entry = True
-            for i, j in itertools.product(range(self.matrix_shape[0]), range(self.matrix_shape[1])):
+            x, y = self.matrix_shape[0], self.matrix_shape[1]
+            for i, j in itertools.product(range(x), range(y)):
                 if self.regions[i][j] != 0:
-                    for month in range(1, 13):
-                        if not first_entry:
-                            output.write(",\n")
-
-                        entry = {
-                            "month" : str("{:02d}".format(month)),
-                            "latitude" : str(self.latitude[i][j]),
-                            "longitude" : str(self.longitude[i][j])
-                        }
-                        json.dump(entry, output)
-                        first_entry = False
+                    self.write_monthly_entry(i, j, output, first_entry)
+                    first_entry = False
             output.write("\n]")
+
+
+    def write_monthly_entry(self, i, j, output, first_entry):
+        for month in range(1, 13):
+            if not first_entry:
+                output.write(",\n")
+
+            entry = {
+                "month" : str("{:02d}".format(month)),
+                "latitude" : str(self.latitude[i][j]),
+                "longitude" : str(self.longitude[i][j]),
+                "region" : str(self.regions[i][j]),
+                "BB" : str(self.hdf["biosphere/{:02d}/BB".format(month)][i][j]),
+                "NPP" : str(self.hdf["biosphere/{:02d}/NPP".format(month)][i][j]),
+                "Rh" : str(self.hdf["biosphere/{:02d}/Rh".format(month)][i][j]),
+                "C" : str(self.hdf["emissions/{:02d}/C".format(month)][i][j]),
+                "DM" : str(self.hdf["emissions/{:02d}/DM".format(month)][i][j]),
+                "burned" : str(self.hdf["burned_area/{:02d}/burned_fraction".format(month)][i][j])
+            }
+            json.dump(entry, output)
+            first_entry = False
+
 
 # -------------------------------------------------
 # Script starts here.
@@ -123,6 +139,5 @@ if __name__ == "__main__":
         sys.exit()
 
     print("Basic structure of hdf file confirmed to conform to GFED4 format.")
-
     writer = GFEDtoJsonOutputWriter(hdf_file)
     writer.write()
