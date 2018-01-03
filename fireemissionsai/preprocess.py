@@ -17,7 +17,7 @@ class Validator:
             files for each month, that contain data in the format required to train the
             emissions predictor.
 
-            By default the new files will be ouput to the same directory that contains
+            By default the new files will be output to the same directory that contains
             the script. Alternatively, you can provide a second argument with a path to
             another directory for the output files to be placed in.
         """
@@ -37,9 +37,9 @@ class Validator:
 
 
     @staticmethod
-    def valid_arguments(arguements):
-        if len(arguements) in (2, 3) and arguements[1] != "--help":
-            path_to_data = arguements[1]
+    def valid_arguments(arguments):
+        if len(arguments) in (2, 3) and arguments[1] != "--help":
+            path_to_data = arguments[1]
             return Validator.valid_hdf_file(path_to_data)
         Validator.print_help_text()
         return False
