@@ -1,3 +1,17 @@
+"""
+The processor.py utility is designed to take a single argument, the path
+to a NASA EarthData Global Fire Emissions Database GFED4.1s_yyyy.hdf5 file.
+Example - $ ./preprocess.py some/directory/GFED4.1s_2015.hdf5
+
+If a valid file path is passed to the utility it should output individual JSON
+files for each month, that contain data in the format required to train the
+emissions predictor.
+
+By default the new files will be output to the same directory that contains
+the script. Alternatively, you can provide a second argument with a path to
+another directory for the output files to be placed in.
+"""
+
 import io, sys, h5py, json, itertools, re
 from pathlib import Path
 
@@ -5,24 +19,6 @@ from pathlib import Path
 # Utility functions class defined below.
 # -------------------------------------------------
 class Validator:
-
-    @staticmethod
-    def print_help_text():
-        help_text = """
-            The processor.py utility is designed to take a single argument, the path
-            to a NASA EarthData Global Fire Emissions Database GFED4.1s_yyyy.hdf5 file.
-            Example - $ ./preprocess.py some/directory/GFED4.1s_2015.hdf5
-
-            If a valid file path is passed to the utility it should output individual JSON
-            files for each month, that contain data in the format required to train the
-            emissions predictor.
-
-            By default the new files will be output to the same directory that contains
-            the script. Alternatively, you can provide a second argument with a path to
-            another directory for the output files to be placed in.
-        """
-        print(re.sub(" +", " ", help_text))
-
 
     @staticmethod
     def valid_hdf_file(path_string):
@@ -41,7 +37,7 @@ class Validator:
         if len(arguments) in (2, 3) and arguments[1] != "--help":
             path_to_data = arguments[1]
             return Validator.valid_hdf_file(path_to_data)
-        Validator.print_help_text()
+        print(__doc__)
         return False
 
 
