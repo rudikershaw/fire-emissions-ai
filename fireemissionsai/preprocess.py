@@ -35,11 +35,12 @@ class Validator:
             "emissions": ("C", "DM")
         }
         valid = True
+        expected_message = "Expected group '{}' not in HDF file '{}'"
         for leaf in groups_and_leaves[group]:
             full_group = "{}/{:02d}/{}".format(group, month, leaf)
             if full_group not in hdf:
                 valid = False
-                print("Expected group '" + full_group + "' not in HDF file.")
+                print(expected_message.format(full_group, hdf.filename))
         return valid
 
 
@@ -47,16 +48,17 @@ class Validator:
     def valid_hdf_structure(file_path):
         hdf = h5py.File(file_path, 'r')
         valid = True
+        expected_message = "Expected group '{}' not in HDF file '{}'"
         for group in "ancill/basis_regions", "lon", "lat":
             if group not in hdf:
                 valid = False
-                print("Expected group '" + group + "' not in HDF file '" + hdf.filename + "'")
+                print(expected_message.format(group, hdf.filename))
         for group in "biosphere", "burned_area", "emissions":
             for month in range(1,13):
                 full_group = "{}/{:02d}".format(group, month)
                 if full_group not in hdf:
                     valid = False
-                    print("Expected group '" + full_group + "' not in HDF file '" + hdf.filename + "'")
+                    print(expected_message.format(full_group, hdf.filename))
                 else:
                     valid = valid and Validator.valid_leaf_groups(group, month, hdf)
         return valid
