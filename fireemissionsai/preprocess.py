@@ -1,18 +1,18 @@
 """
-The processor.py utility is designed to take a single argument, the path
-to a NASA EarthData Global Fire Emissions Database GFED4.1s_yyyy.hdf5 file.
-Example - $ ./preprocess.py some/directory/GFED4.1s_2015.hdf5
+The preprocess.py module main script is designed to take a single argument,
+the path to a directory containing NASA EarthData Global Fire Emissions
+Database GFED4.1s_yyyy.hdf5 files.
 
-If a valid file path is passed to the utility it should output individual JSON
-files for each month, that contain data in the format required to train the
-emissions predictor.
+If a valid directory path is passed to the utility it should validate any hdf
+files in the directory and output feedback.
 
-By default the new files will be output to the same directory that contains
-the script. Alternatively, you can provide a second argument with a path to
-another directory for the output files to be placed in.
+The preprocess module also acts as an importable source of valdation and a
+means of streaming training entries and their target outputs from specified
+valid hdf files.
 """
 
-import io, sys, h5py, json, itertools, re
+import h5py, json, itertools, re, os
+from argparse import ArgumentParser, RawTextHelpFormatter
 from pathlib import Path
 
 # -------------------------------------------------
@@ -21,28 +21,14 @@ from pathlib import Path
 class Validator:
 
     @staticmethod
-    def valid_hdf_file(path_string):
-        valid_extensions = "hdf","hdf4","hdf5","h4","h5", "he2", "he5"
-        if path_string.split(".")[-1].lower() in valid_extensions:
-            if Path(path_string).is_file():
-                return True
-            print("\n'" + path_string + "' is not a valid file.\n")
-            return False
-        print("\nThe input file must be an HDF file with a correct extension.\n")
+    def valid_hdf_file(f):
+        extensions = "hdf","hdf4","hdf5","h4","h5", "he2", "he5"
+        if os.path.isfile(f) and f.split(".")[-1].lower() in extensions:
+            return True
         return False
 
-
     @staticmethod
-    def valid_arguments(arguments):
-        if len(arguments) in (2, 3) and arguments[1] != "--help":
-            path_to_data = arguments[1]
-            return Validator.valid_hdf_file(path_to_data)
-        print(__doc__)
-        return False
-
-
-    @staticmethod
-    def valid_leaf_groups(group, month, hdf_file):
+    def valid_leaf_groups(group, month, hdf):
         groups_and_leaves = {
             "biosphere": ("BB", "NPP", "Rh"),
             "burned_area": ("burned_fraction",),
@@ -51,72 +37,29 @@ class Validator:
         valid = True
         for leaf in groups_and_leaves[group]:
             full_group = "{}/{:02d}/{}".format(group, month, leaf)
-            if full_group not in hdf_file:
+            if full_group not in hdf:
                 valid = False
                 print("Expected group '" + full_group + "' not in HDF file.")
         return valid
 
 
     @staticmethod
-    def valid_hdf_structure(hdf_file):
+    def valid_hdf_structure(file_path):
+        hdf = h5py.File(file_path, 'r')
         valid = True
         for group in "ancill/basis_regions", "lon", "lat":
-            if group not in hdf_file:
+            if group not in hdf:
                 valid = False
-                print("Expected group '" + group + "' not in HDF file.")
+                print("Expected group '" + group + "' not in HDF file '" + hdf.filename + "'")
         for group in "biosphere", "burned_area", "emissions":
             for month in range(1,13):
                 full_group = "{}/{:02d}".format(group, month)
-                if full_group not in hdf_file:
+                if full_group not in hdf:
                     valid = False
-                    print("Expected group '" + full_group + "' not in HDF file.")
+                    print("Expected group '" + full_group + "' not in HDF file '" + hdf.filename + "'")
                 else:
-                    valid = valid and Validator.valid_leaf_groups(group, month, hdf_file)
+                    valid = valid and Validator.valid_leaf_groups(group, month, hdf)
         return valid
-
-
-class GFEDtoJsonOutputWriter:
-
-    def __init__(self, hdf_file):
-        self.hdf = hdf_file
-        self.regions = hdf_file["ancill/basis_regions"]
-        self.latitude = hdf_file["lat"]
-        self.longitude = hdf_file["lon"]
-        self.matrix_shape = self.regions.shape
-
-
-    def write(self, output_path="preprocess-output.json"):
-        print("Writing to preprocess-output.json file. This might take a while...")
-        with io.open(output_path, "w", encoding='utf-8') as output:
-            output.write("[\n")
-            first_entry = True
-            x, y = self.matrix_shape[0], self.matrix_shape[1]
-            for i, j in itertools.product(range(x), range(y)):
-                if self.regions[i][j] != 0:
-                    self.write_monthly_entry(i, j, output, first_entry)
-                    first_entry = False
-            output.write("\n]")
-
-
-    def write_monthly_entry(self, i, j, output, first_entry):
-        for month in range(1, 13):
-            if not first_entry:
-                output.write(",\n")
-
-            entry = {
-                "month" : str("{:02d}".format(month)),
-                "latitude" : str(self.latitude[i][j]),
-                "longitude" : str(self.longitude[i][j]),
-                "region" : str(self.regions[i][j]),
-                "BB" : str(self.hdf["biosphere/{:02d}/BB".format(month)][i][j]),
-                "NPP" : str(self.hdf["biosphere/{:02d}/NPP".format(month)][i][j]),
-                "Rh" : str(self.hdf["biosphere/{:02d}/Rh".format(month)][i][j]),
-                "C" : str(self.hdf["emissions/{:02d}/C".format(month)][i][j]),
-                "DM" : str(self.hdf["emissions/{:02d}/DM".format(month)][i][j]),
-                "burned" : str(self.hdf["burned_area/{:02d}/burned_fraction".format(month)][i][j])
-            }
-            json.dump(entry, output)
-            first_entry = False
 
 
 # -------------------------------------------------
@@ -124,16 +67,19 @@ class GFEDtoJsonOutputWriter:
 # -------------------------------------------------
 
 if __name__ == "__main__":
-    if not Validator.valid_arguments(sys.argv):
-        sys.exit()
+    parser = ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("directory", help="Directory with GFED4.1s_yyyy HDF files")
+    directory = parser.parse_args().directory
 
-    filename = sys.argv[1]
-    print("Processing - " + filename)
-    hdf_file = h5py.File(filename, 'r')
+    print("Processing files in directory '" + directory + "'.")
+    print("The following files adhered to the correct format.")
+    found = False
+    for f in sorted(os.listdir(directory)):
+        full_path = directory + f
+        if Validator.valid_hdf_file(full_path) and Validator.valid_hdf_structure(full_path):
+            found = True
+            print("  " + f)
 
-    if not Validator.valid_hdf_structure(hdf_file):
-        sys.exit()
-
-    print("Basic structure of hdf file confirmed to conform to GFED4 format.")
-    writer = GFEDtoJsonOutputWriter(hdf_file)
-    writer.write()
+    print("...")
+    if not found:
+        print("No valid HDF files found in that directory.")
