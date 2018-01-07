@@ -74,7 +74,7 @@ if __name__ == "__main__":
     directory = parser.parse_args().directory
 
     print("Processing files in directory '" + directory + "'.")
-    print("The following files adhered to the correct format.")
+    print("The following files adhere to the expected GFED4 format.")
     found = False
     for f in sorted(os.listdir(directory)):
         full_path = directory + f
@@ -84,4 +84,4 @@ if __name__ == "__main__":
 
     print("...")
     if not found:
-        print("No valid HDF files found in that directory.")
+        print("No valid HDF GFED4 files found in that directory.")
