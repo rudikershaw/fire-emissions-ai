@@ -20,22 +20,21 @@ from pathlib import Path
 # -------------------------------------------------
 class Validator:
     """Used to validate hdf files to ensure they conform to the GFED format."""
+
     @staticmethod
-    def valid_hdf_file(f):
-        """
-        Takes a string representation of a file and returns true if this
-        file exists and has the correct extension.
-        """
+    def valid_hdf_file(f: str):
+        """Returns true if this file exists and has the correct extension."""
         extensions = "hdf","hdf4","hdf5","h4","h5", "he2", "he5"
         if os.path.isfile(f) and f.split(".")[-1].lower() in extensions:
             return True
         return False
 
     @staticmethod
-    def valid_leaf_groups(group, month, hdf):
+    def valid_leaf_groups(group: str, month: str, hdf: h5py.File):
         """
-        Checks that all expected groups within month specific groups exist
-        and prints errors to the console if they cannot be found. Returns
+        Checks all expected groups within month specific groups exist.
+
+        Function prints errors to the console if they cannot be found. Returns
         true if all expected groups are present, otherwise false.
         """
         groups_and_leaves = {
@@ -54,10 +53,11 @@ class Validator:
 
 
     @staticmethod
-    def valid_hdf_structure(file_path):
+    def valid_hdf_structure(file_path: str):
         """
-        Checks that all groups and group months exists in the file and
-        prints errors to the console if expected groups cannot be found.
+        Checks all groups and group months exists in the file.
+
+        Prints errors to the console if expected groups cannot be found.
         Returns true if all expected groups are present, otherwise false.
         """
         hdf = h5py.File(file_path, 'r')
@@ -80,8 +80,9 @@ class Validator:
 
 class EmissionsEntryStreamer:
     """
-    Used to create a streamer object that parses groups of valid GFED files
-    and outputs entries designed for training a recurrent neural net model.
+    Used to create a streamer object that parses groups of valid GFED files.
+
+    Outputs entries designed for training a recurrent neural net model.
     These entries consist of a 5x5 matrix of tuples containing lat long
     positions and their emissions data, as well as a singular target tuple.
     """
@@ -95,6 +96,7 @@ class EmissionsEntryStreamer:
     def __init__ (self, files):
         """
         files should be a touple of h5py hdf file objects ending _yyyy.hdf5.
+
         This touple of files should only include files pre-validated by the
         preprocess.Validator
         """
