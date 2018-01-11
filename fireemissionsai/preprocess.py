@@ -1,5 +1,4 @@
-"""
-The preprocess.py module main script is designed to take a single argument,
+"""The preprocess.py module main script is designed to take a single argument,
 the path to a directory containing NASA EarthData Global Fire Emissions
 Database GFED4.1s_yyyy.hdf5 files.
 
@@ -31,8 +30,7 @@ class Validator:
 
     @staticmethod
     def valid_leaf_groups(group: str, month: str, hdf: h5py.File):
-        """
-        Checks all expected groups within month specific groups exist.
+        """Checks all expected groups within month specific groups exist.
 
         Function prints errors to the console if they cannot be found. Returns
         true if all expected groups are present, otherwise false.
@@ -54,8 +52,7 @@ class Validator:
 
     @staticmethod
     def valid_hdf_structure(file_path: str):
-        """
-        Checks all groups and group months exists in the file.
+        """Checks all groups and group months exists in the file.
 
         Prints errors to the console if expected groups cannot be found.
         Returns true if all expected groups are present, otherwise false.
@@ -79,8 +76,7 @@ class Validator:
 
 
 class EmissionsEntryStreamer:
-    """
-    Used to create a streamer object that parses groups of valid GFED files.
+    """Used to create a streamer object that parses groups of valid GFED files.
 
     Outputs entries designed for training a recurrent neural net model.
     These entries consist of a 5x5 matrix of tuples containing lat long
@@ -94,8 +90,7 @@ class EmissionsEntryStreamer:
     f = 0
 
     def __init__ (self, files):
-        """
-        files should be a touple of h5py hdf file objects ending _yyyy.hdf5.
+        """files should be a touple of h5py hdf file objects ending _yyyy.hdf5.
 
         This touple of files should only include files pre-validated by the
         preprocess.Validator
