@@ -10,9 +10,14 @@ means of streaming training entries and their target outputs from specified
 valid hdf files.
 """
 
-import h5py, json, itertools, re, os
+import re
+import os
+import json
+import h5py
+import pprint
+import itertools
 from argparse import ArgumentParser, RawTextHelpFormatter
-from pathlib import Path
+
 
 # -------------------------------------------------
 # Utility functions class defined below.
@@ -82,27 +87,96 @@ class EmissionsEntryStreamer:
     These entries consist of a 5x5 matrix of tuples containing lat long
     positions and their emissions data, as well as a singular target tuple.
     """
-    # Current index for looping through lat long matrices.
-    i, j = 0, 0
-    # Max size of matrices dimensions.
-    max_i, max_j = 0, 0
-    # The index of the current file being processed
-    f = 0
 
     def __init__ (self, files):
         """files should be a touple of h5py hdf file objects ending _yyyy.hdf5.
 
-        This touple of files should only include files pre-validated by the
-        preprocess.Validator
+        This touple of files provided should only include files pre-validated
+        by the preprocess.Validator methods.
         """
         self.files = files
         self.max_i, self.max_j = files[0]["ancill/basis_regions"].shape
+        # The index of the current file being processed.
+        self.f = 0
+        # The current month being processed.
+        self.month = 1
+        # Current index for looping through lat long matrices.
+        self.i, self.j = 0, 0
+
+    def getEntry(self, i: int, j: int, plus=0):
+        """Gets an entry from position i,j in file f+plus in files."""
+        hdf = self.files[self.f + plus]
+        return {
+            "latitude" : hdf["lat"][i][j],
+            "longitude" : hdf["lon"][i][j],
+            "region" : hdf["ancill/basis_regions"][i][j],
+            "BB" : hdf["biosphere/{:02d}/BB".format(self.month)][i][j],
+            "NPP" : hdf["biosphere/{:02d}/NPP".format(self.month)][i][j],
+            "Rh" : hdf["biosphere/{:02d}/Rh".format(self.month)][i][j],
+            "C" : hdf["emissions/{:02d}/C".format(self.month)][i][j],
+            "DM" : hdf["emissions/{:02d}/DM".format(self.month)][i][j],
+            "burned" : hdf["burned_area/{:02d}/burned_fraction".format(self.month)][i][j]
+        }
+
+    def hasNextMonth(self):
+        """Checks whether there is another month in the current file."""
+        return self.month < 12
+
+    def hasNextCoordinate(self):
+        """Checks whether there is another coordinate in the current file."""
+        return self.i < (self.max_i - 1) and self.j < (self.max_j - 1)
+
+    def hasNextFile(self):
+        """Checks whether there is another file after the current file."""
+        return f < (len(self.files) - 1)
 
     def hasNext(self):
         """Checks whether there is another entry to parse."""
-        more_in_file = (self.max_i - 1) < self.i and (self.max_j - 1) < self.j
-        more_files = (len(self.files) - 1) < f
-        return more_in_file or more_files
+        return self.hasNextMonth() or self.hasNextCoordinate() or self.hasNextFile()
+
+    def next(self):
+        """Parses and converts the next training example."""
+        training = {
+            "year" : "TODO - Parse year from filename",
+            "month" : self.month,
+            "entries" : []
+        }
+        for x, y in itertools.product(range(-2, 3), range(-2, 3)):
+            ti, tj = self.i - x, self.j - y
+            # Wrap matrix if values fall off bottom.
+            if ti < 0:
+                ti = self.max_i + ti
+            if tj < 0:
+                tj = self.max_j + tj
+            # Use modulus to wrap matrix if values fall off top.
+            if ti != 0:
+                ti = self.max_i % ti
+            if tj != 0:
+                tj = self.max_j % tj
+
+            training["entries"].append(self.getEntry(ti, tj))
+
+        training["target"] = self.getEntry(self.i, self.j, plus=1)
+        self.increment()
+        return training
+
+    def increment(self):
+        """Move month, position, or year file as appropriate."""
+        if self.month < 12:
+            self.month += 1
+            return
+        self.month = 1
+        if self.i < (self.max_i - 1):
+            self.i += 1
+            return
+        self.i = 0
+        if self.j < (self.max_j - 1):
+            self.j += 1
+            return
+        self.j = 0
+        if self.f < (len(files) - 1):
+            self.f += 1
+        return
 
 
 # -------------------------------------------------
@@ -115,14 +189,22 @@ if __name__ == "__main__":
     directory = parser.parse_args().directory
 
     print("Processing files in directory '" + directory + "'.")
-    print("The following files adhere to the expected GFED4 format.")
-    found = False
+    print("The following files adhere to the expected GFED format.")
+    files = []
     for f in sorted(os.listdir(directory)):
         full_path = directory + f
         if Validator.valid_hdf_file(full_path) and Validator.valid_hdf_structure(full_path):
-            found = True
+            files.append(h5py.File(full_path, 'r'))
             print("  " + f)
 
     print("...")
-    if not found:
-        print("No valid HDF GFED4 files found in that directory.")
+    if len(files) > 1:
+        print("Directory contains valid files HDF GFED for training data.")
+        parser = EmissionsEntryStreamer(files)
+        pp = pprint.PrettyPrinter(indent=4)
+        print("Printing example entry: \n")
+        pp.pprint(parser.next())
+    elif len(files) == 1:
+        print("At least 2 valid HDF GFED files required but found 1.")
+    else:
+        print("No valid HDF GFED files found in that directory.")
