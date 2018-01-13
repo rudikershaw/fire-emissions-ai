@@ -81,7 +81,7 @@ class Validator:
         return valid
 
 
-class EmissionsEntryStreamer:
+class GFEDDataParser:
     """Used to create a streamer object that parses groups of valid GFED files.
 
     Outputs entries designed for training a recurrent neural net model.
@@ -104,7 +104,7 @@ class EmissionsEntryStreamer:
         # Current index for looping through lat long matrices.
         self.i, self.j = 0, 0
 
-    def getEntry(self, i: int, j: int):
+    def get_entry(self, i: int, j: int):
         """Gets an entry from position i,j in current file."""
         m = self.month
         hdf = self.files[self.f]
@@ -120,10 +120,10 @@ class EmissionsEntryStreamer:
             "burned" : hdf["burned_area/{:02d}/burned_fraction".format(m)][i][j]
         }
 
-    def getTarget(self, i: int, j: int):
+    def get_target(self, i: int, j: int):
         """Gets an entry from position i,j in file f+plus in files."""
-        if self.hasNextMonth() or self.hasNextFile():
-            m = self.month + 1 if self.hasNextMonth() else 1
+        if self.has_next_month() or self.has_next_file():
+            m = self.month + 1 if self.has_next_month() else 1
             hdf = self.files[self.f] if m > 1 else self.files[self.f + 1]
             return {
                 "BB" : hdf["biosphere/{:02d}/BB".format(m)][i][j],
@@ -135,21 +135,21 @@ class EmissionsEntryStreamer:
             }
         return {}
 
-    def hasNextMonth(self):
+    def has_next_month(self):
         """Checks whether there is another month in the current file."""
         return self.month < 12
 
-    def hasNextCoordinate(self):
+    def has_next_coordinate(self):
         """Checks whether there is another coordinate in the current file."""
         return self.i < (self.max_i - 1) and self.j < (self.max_j - 1)
 
-    def hasNextFile(self):
+    def has_next_file(self):
         """Checks whether there is another file after the current file."""
         return self.f < (len(self.files) - 1)
 
-    def hasNext(self):
+    def has_next(self):
         """Checks whether there is another entry to parse."""
-        return self.hasNextMonth() or self.hasNextCoordinate() or self.hasNextFile()
+        return self.has_next_month() or self.has_next_coordinate() or self.has_next_file()
 
     def next(self):
         """Parses and converts the next training example."""
@@ -174,15 +174,15 @@ class EmissionsEntryStreamer:
             if tj != 0:
                 tj = (self.max_j - 1) % tj
 
-            training["entries"].append(self.getEntry(ti, tj))
+            training["entries"].append(self.get_entry(ti, tj))
 
-        training["target"] = self.getTarget(self.i, self.j)
+        training["target"] = self.get_target(self.i, self.j)
         self.increment()
         return training
 
     def increment(self):
         """Move month, position, or year file as appropriate."""
-        if self.hasNextMonth():
+        if self.has_next_month():
             self.month += 1
             return
         self.month = 1
@@ -194,7 +194,7 @@ class EmissionsEntryStreamer:
             self.j += 1
             return
         self.j = 0
-        if self.hasNextFile():
+        if self.has_next_file():
             self.f += 1
         return
 
@@ -216,11 +216,11 @@ def validate_and_parse(directory):
     print("...")
     if len(files) > 1:
         print("Directory contains valid GFED HDF files for training data.")
-        parser = EmissionsEntryStreamer(files)
+        parser = GFEDDataParser(files)
         pp = pprint.PrettyPrinter(indent=4)
         count = 0
         entry = {}
-        while parser.hasNext():
+        while parser.has_next():
             entry = parser.next()
             count += 1
             print("Entries found: " + str(count), end="\r")
