@@ -128,7 +128,7 @@ class EmissionsEntryStreamer:
 
     def hasNextFile(self):
         """Checks whether there is another file after the current file."""
-        return f < (len(self.files) - 1)
+        return self.f < (len(self.files) - 1)
 
     def hasNext(self):
         """Checks whether there is another entry to parse."""
@@ -150,9 +150,9 @@ class EmissionsEntryStreamer:
                 tj = self.max_j + tj
             # Use modulus to wrap matrix if values fall off top.
             if ti != 0:
-                ti = self.max_i % ti
+                ti = (self.max_i - 1) % ti
             if tj != 0:
-                tj = self.max_j % tj
+                tj = (self.max_j - 1) % tj
 
             training["entries"].append(self.getEntry(ti, tj))
 
@@ -162,7 +162,7 @@ class EmissionsEntryStreamer:
 
     def increment(self):
         """Move month, position, or year file as appropriate."""
-        if self.month < 12:
+        if self.hasNextMonth():
             self.month += 1
             return
         self.month = 1
@@ -174,7 +174,7 @@ class EmissionsEntryStreamer:
             self.j += 1
             return
         self.j = 0
-        if self.f < (len(files) - 1):
+        if self.hasNextFile():
             self.f += 1
         return
 
@@ -182,29 +182,38 @@ class EmissionsEntryStreamer:
 # -------------------------------------------------
 # Script starts here.
 # -------------------------------------------------
-
-if __name__ == "__main__":
-    parser = ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
-    parser.add_argument("directory", help="Directory with GFED4.1s_yyyy HDF files")
-    directory = parser.parse_args().directory
-
+def validate_and_parse(directory):
+    """Validates the files in a directory for GFED format and parses them."""
     print("Processing files in directory '" + directory + "'.")
     print("The following files adhere to the expected GFED format.")
     files = []
-    for f in sorted(os.listdir(directory)):
-        full_path = directory + f
+    for fi in sorted(os.listdir(directory)):
+        full_path = directory + fi
         if Validator.valid_hdf_file(full_path) and Validator.valid_hdf_structure(full_path):
             files.append(h5py.File(full_path, 'r'))
-            print("  " + f)
+            print("  " + fi)
 
     print("...")
     if len(files) > 1:
-        print("Directory contains valid files HDF GFED for training data.")
+        print("Directory contains valid GFED HDF files for training data.")
         parser = EmissionsEntryStreamer(files)
         pp = pprint.PrettyPrinter(indent=4)
+        count = 0
+        entry = {}
+        while parser.hasNext():
+            entry = parser.next()
+            count += 1
+            print("Entries found: " + str(count), end="\r")
+
+        print("Entries parsed: " + str(count))
         print("Printing example entry: \n")
-        pp.pprint(parser.next())
+        pp.pprint(entry)
     elif len(files) == 1:
         print("At least 2 valid HDF GFED files required but found 1.")
     else:
         print("No valid HDF GFED files found in that directory.")
+
+if __name__ == "__main__":
+    parser = ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    parser.add_argument("directory", help="Directory with GFED4.1s_yyyy HDF files")
+    validate_and_parse(parser.parse_args().directory)
