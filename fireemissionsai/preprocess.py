@@ -28,8 +28,9 @@ class Validator:
     @staticmethod
     def valid_hdf_file(f: str):
         """Returns true if this file exists and has the correct extension."""
-        extensions = "hdf","hdf4","hdf5","h4","h5", "he2", "he5"
-        if os.path.isfile(f) and f.split(".")[-1].lower() in extensions:
+        ic = re.IGNORECASE
+        match = re.search('_(\d{4})\.(hdf$|hdf4$|hdf5$|h4$|h5$|he2$|he5$)', f, ic)
+        if os.path.isfile(f) and match != None:
             return True
         return False
 
@@ -103,20 +104,36 @@ class EmissionsEntryStreamer:
         # Current index for looping through lat long matrices.
         self.i, self.j = 0, 0
 
-    def getEntry(self, i: int, j: int, plus=0):
-        """Gets an entry from position i,j in file f+plus in files."""
-        hdf = self.files[self.f + plus]
+    def getEntry(self, i: int, j: int):
+        """Gets an entry from position i,j in current file."""
+        m = self.month
+        hdf = self.files[self.f]
         return {
             "latitude" : hdf["lat"][i][j],
             "longitude" : hdf["lon"][i][j],
             "region" : hdf["ancill/basis_regions"][i][j],
-            "BB" : hdf["biosphere/{:02d}/BB".format(self.month)][i][j],
-            "NPP" : hdf["biosphere/{:02d}/NPP".format(self.month)][i][j],
-            "Rh" : hdf["biosphere/{:02d}/Rh".format(self.month)][i][j],
-            "C" : hdf["emissions/{:02d}/C".format(self.month)][i][j],
-            "DM" : hdf["emissions/{:02d}/DM".format(self.month)][i][j],
-            "burned" : hdf["burned_area/{:02d}/burned_fraction".format(self.month)][i][j]
+            "BB" : hdf["biosphere/{:02d}/BB".format(m)][i][j],
+            "NPP" : hdf["biosphere/{:02d}/NPP".format(m)][i][j],
+            "Rh" : hdf["biosphere/{:02d}/Rh".format(m)][i][j],
+            "C" : hdf["emissions/{:02d}/C".format(m)][i][j],
+            "DM" : hdf["emissions/{:02d}/DM".format(m)][i][j],
+            "burned" : hdf["burned_area/{:02d}/burned_fraction".format(m)][i][j]
         }
+
+    def getTarget(self, i: int, j: int):
+        """Gets an entry from position i,j in file f+plus in files."""
+        if self.hasNextMonth() or self.hasNextFile():
+            m = self.month + 1 if self.hasNextMonth() else 1
+            hdf = self.files[self.f] if m > 1 else self.files[self.f + 1]
+            return {
+                "BB" : hdf["biosphere/{:02d}/BB".format(m)][i][j],
+                "NPP" : hdf["biosphere/{:02d}/NPP".format(m)][i][j],
+                "Rh" : hdf["biosphere/{:02d}/Rh".format(m)][i][j],
+                "C" : hdf["emissions/{:02d}/C".format(m)][i][j],
+                "DM" : hdf["emissions/{:02d}/DM".format(m)][i][j],
+                "burned" : hdf["burned_area/{:02d}/burned_fraction".format(m)][i][j]
+            }
+        return {}
 
     def hasNextMonth(self):
         """Checks whether there is another month in the current file."""
@@ -136,8 +153,11 @@ class EmissionsEntryStreamer:
 
     def next(self):
         """Parses and converts the next training example."""
+        ic = re.IGNORECASE
+        name = self.files[self.f].filename
+        search = re.search('_(\d{4})\.(hdf$|hdf4$|hdf5$|h4$|h5$|he2$|he5$)', name, ic)
         training = {
-            "year" : "TODO - Parse year from filename",
+            "year" : search.group(1),
             "month" : self.month,
             "entries" : []
         }
@@ -156,7 +176,7 @@ class EmissionsEntryStreamer:
 
             training["entries"].append(self.getEntry(ti, tj))
 
-        training["target"] = self.getEntry(self.i, self.j, plus=1)
+        training["target"] = self.getTarget(self.i, self.j)
         self.increment()
         return training
 
