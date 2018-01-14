@@ -141,7 +141,7 @@ class GFEDDataParser:
 
     def has_next_coordinate(self):
         """Checks whether there is another coordinate in the current file."""
-        return self.i < (self.max_i - 1) and self.j < (self.max_j - 1)
+        return self.i < (self.max_i - 1) or self.j < (self.max_j - 1)
 
     def has_next_file(self):
         """Checks whether there is another file after the current file."""
@@ -180,21 +180,30 @@ class GFEDDataParser:
         self.increment()
         return training
 
+    def reset(self, month_b=True, i_b=False, j_b=False):
+        "Resets to the lowest value of each month, i, or j when rolled over."
+        if month_b:
+            self.month = 1
+        if i_b:
+            self.i = 0
+        if j_b:
+            self.j = 0
+
     def increment(self):
         """Move month, position, or year file as appropriate."""
         if self.has_next_month():
             self.month += 1
             return
-        self.month = 1
         if self.i < (self.max_i - 1):
+            self.reset()
             self.i += 1
             return
-        self.i = 0
         if self.j < (self.max_j - 1):
+            self.reset(i_b=True)
             self.j += 1
             return
-        self.j = 0
         if self.has_next_file():
+            self.reset(i_b=True, j_b=True)
             self.f += 1
         return
 

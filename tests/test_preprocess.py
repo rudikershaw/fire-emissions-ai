@@ -26,9 +26,33 @@ class TestValidator(TestCase):
 class TestParser(TestCase):
     """Test the preprocess.GFEDDataParser."""
 
-    def test_construct(self):
-        """Test the basic construction of an GFEDDataParser."""
-        # min_hdf = h5py.File('tests/resources/min_2018.hdf5', 'w')
-        # min_hdf["ancill/basis_regions"].create_dataset("d", (50,), dtype='i')
-        # files = [min_hdf]
-        # parser = GFEDDataParser(files)
+    def test_incremement_and_has_nexts(self):
+        """Test the basic construction, incremeneting, and has_next functions."""
+        parser = GFEDDataParser([h5py.File('tests/resources/min_2018.hdf5', 'r')])
+        self.assertEqual(parser.month, 1)
+        self.assertEqual(parser.i, 0)
+        self.assertTrue(parser.has_next())
+        # Increment through all 12 months.
+        for i in range(1,13):
+            self.assertTrue(parser.has_next())
+            self.assertEqual(parser.month, i)
+            if i == 12:
+                self.assertFalse(parser.has_next_month())
+            else:
+                self.assertTrue(parser.has_next_month())
+            parser.increment()
+        self.assertEqual(parser.month, 1)
+        self.assertEqual(parser.i, 1)
+        # Increment through all other i and their months to a new j
+        for i in range(1, (9 * 12) + 1):
+            self.assertTrue(parser.has_next())
+            parser.increment()
+        self.assertEqual(parser.j, 1)
+        self.assertTrue(parser.has_next())
+        self.assertFalse(parser.has_next_file())
+        # Increment to the end of the file.
+        for i in range(1, (10 * 12 * 9)):
+            self.assertTrue(parser.has_next())
+            parser.increment()
+        self.assertFalse(parser.has_next_coordinate())
+        self.assertFalse(parser.has_next())
