@@ -16,7 +16,8 @@ class TestValidator(TestCase):
 
     def test_valid_hdf_structure(self):
         """Test the Validator.valid_hdf_file and valid_leaf_groups functions."""
-        tmp_file = os.path.join(tempfile.gettempdir(), "new.hdf5")
+        uid = "211a63df-6b10-4954"
+        tmp_file = os.path.join(tempfile.gettempdir(), uid + ".hdf5")
         h5py.File(tmp_file, 'w').close()
         # Providing empty hdf5 file is not valid.
         self.assertFalse(Validator.valid_hdf_structure(tmp_file))
