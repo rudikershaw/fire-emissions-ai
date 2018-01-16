@@ -1,5 +1,6 @@
 # Application ouput files.
-preprocess-output.json
+preprocess-output-features.csv
+preprocess-output-targets.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

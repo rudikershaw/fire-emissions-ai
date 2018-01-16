@@ -12,6 +12,7 @@ valid hdf files.
 
 import re
 import os
+import csv
 import json
 import h5py
 import pprint
@@ -240,15 +241,22 @@ def validate_and_parse(directory):
         parser = GFEDDataParser(files)
         pp = pprint.PrettyPrinter(indent=4)
         count = 0
-        entry = {}
-        while parser.has_next():
-            entry = parser.next()
-            count += 1
-            print("Entries found: " + str(count), end="\r")
+        with open("preprocess-output-features.csv", "w") as csv_features,
+             open("preprocess-output-targets.csv", "w") as csv_targets:
+            f_writer = csv.writer(csv_features)
+            t_writer = csv.writer(csv_targets)
+            while parser.has_next() and count < 200:
+                if parser.files[parser.f]["ancill/basis_regions"][parser.i][parser.j] != 0:
+                    features, target = parser.next()
+                    f_writer.writerow(features)
+                    t_writer.writerow(targets)
+                    count += 1
+                    print("Entries found: " + str(count), end="\r")
+                else:
+                    parser.increment()
 
-        print("Entries parsed: " + str(count))
-        print("Printing example entry: \n")
-        pp.pprint(entry)
+        print("Example entries parsed: " + str(count))
+        print("Example features and target values written to csvs in current directory.")
     elif len(files) == 1:
         print("At least 2 valid HDF GFED files required but found 1.")
     else:
