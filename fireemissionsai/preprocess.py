@@ -109,8 +109,8 @@ class GFEDDataParser:
         m = self.month
         hdf = self.files[self.f]
         return {
-            "latitude" : hdf["lat"][i][j],
-            "longitude" : hdf["lon"][i][j],
+            "lat" : hdf["lat"][i][j],
+            "lon" : hdf["lon"][i][j],
             "region" : hdf["ancill/basis_regions"][i][j],
             "BB" : hdf["biosphere/{:02d}/BB".format(m)][i][j],
             "NPP" : hdf["biosphere/{:02d}/NPP".format(m)][i][j],
@@ -125,15 +125,15 @@ class GFEDDataParser:
         if self.has_next_month() or self.has_next_file():
             m = self.month + 1 if self.has_next_month() else 1
             hdf = self.files[self.f] if m > 1 else self.files[self.f + 1]
-            return {
-                "BB" : hdf["biosphere/{:02d}/BB".format(m)][i][j],
-                "NPP" : hdf["biosphere/{:02d}/NPP".format(m)][i][j],
-                "Rh" : hdf["biosphere/{:02d}/Rh".format(m)][i][j],
-                "C" : hdf["emissions/{:02d}/C".format(m)][i][j],
-                "DM" : hdf["emissions/{:02d}/DM".format(m)][i][j],
-                "burned" : hdf["burned_area/{:02d}/burned_fraction".format(m)][i][j]
-            }
-        return {}
+            return [
+                hdf["biosphere/{:02d}/BB".format(m)][i][j],
+                hdf["biosphere/{:02d}/NPP".format(m)][i][j],
+                hdf["biosphere/{:02d}/Rh".format(m)][i][j],
+                hdf["emissions/{:02d}/C".format(m)][i][j],
+                hdf["emissions/{:02d}/DM".format(m)][i][j],
+                hdf["burned_area/{:02d}/burned_fraction".format(m)][i][j]
+            ]
+        return []
 
     def has_next_month(self):
         """Checks whether there is another month in the current file."""
@@ -156,11 +156,13 @@ class GFEDDataParser:
         ic = re.IGNORECASE
         name = self.files[self.f].filename
         search = re.search('_(\d{4})\.(hdf$|hdf4$|hdf5$|h4$|h5$|he2$|he5$)', name, ic)
-        training = {
-            "year" : search.group(1),
-            "month" : self.month,
-            "entries" : []
-        }
+        training = [
+            # Year
+            search.group(1),
+            # Month
+            self.month,
+        ]
+        lons, lats, regions, bbs, npps, rhs, cs, dms, burns = [[] for i in range(9)]
         for x, y in itertools.product(range(-2, 3), range(-2, 3)):
             ti, tj = self.i - x, self.j - y
             # Wrap matrix if values fall off bottom.
@@ -174,11 +176,21 @@ class GFEDDataParser:
             if tj != 0:
                 tj = (self.max_j - 1) % tj
 
-            training["entries"].append(self.get_entry(ti, tj))
+            entry = self.get_entry(ti, tj)
+            lons.append(entry["lon"])
+            lats.append(entry["lat"])
+            regions.append(entry["region"])
+            bbs.append(entry["BB"])
+            npps.append(entry["NPP"])
+            rhs.append(entry["Rh"])
+            cs.append(entry["C"])
+            dms.append(entry["DM"])
+            burns.append(entry["burned"])
 
-        training["target"] = self.get_target(self.i, self.j)
+        training += lons + lats + regions + bbs + npps + rhs + cs + dms + burns
+        target = self.get_target(self.i, self.j)
         self.increment()
-        return training
+        return (training, target)
 
     def reset(self, month_b=True, i_b=False, j_b=False):
         "Resets to the lowest value of each month, i, or j when rolled over."
