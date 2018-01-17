@@ -37,7 +37,7 @@ setup(
     packages=find_packages(exclude=('tests',)),
     install_requires=REQUIRED,
     include_package_data=True,
-    license='APACHE 2.0',
+    license='MIT',
     test_suite='tests',
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
