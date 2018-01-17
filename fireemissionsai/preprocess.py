@@ -224,7 +224,7 @@ class GFEDDataParser:
 # -------------------------------------------------
 # Script starts here.
 # -------------------------------------------------
-def validate_and_parse(directory):
+def validate_and_parse(directory, size):
     """Validates the files in a directory for GFED format and parses them."""
     print("Processing files in directory '" + directory + "'.")
     print("The following files adhere to the expected GFED format.")
@@ -241,22 +241,31 @@ def validate_and_parse(directory):
         parser = GFEDDataParser(files)
         pp = pprint.PrettyPrinter(indent=4)
         count = 0
-        with open("preprocess-output-features.csv", "w") as csv_features,
-             open("preprocess-output-targets.csv", "w") as csv_targets:
-            f_writer = csv.writer(csv_features)
-            t_writer = csv.writer(csv_targets)
-            while parser.has_next() and count < 200:
+        # Create csvs for features and targets for training and testing.
+        if not os.path.isdir("output"):
+            os.makedirs("output")
+        tf, tt = "output/train-features.csv", "output/train-targets.csv"
+        vf, vt = "output/test-features.csv", "output/test-targets.csv"
+        with open(tf, "w") as csv_tf, open(tt, "w") as csv_tt, \
+             open(vf, "w") as csv_vf, open(vt, "w") as csv_vt:
+            tf_writer, tt_writer = csv.writer(csv_tf), csv.writer(csv_tt)
+            vf_writer, vt_writer = csv.writer(csv_vf), csv.writer(csv_vt)
+            while parser.has_next() and count < size:
                 if parser.files[parser.f]["ancill/basis_regions"][parser.i][parser.j] != 0:
-                    features, target = parser.next()
-                    f_writer.writerow(features)
-                    t_writer.writerow(targets)
                     count += 1
+                    features, targets = parser.next()
+                    if (count % 10) == 0:
+                        vf_writer.writerow(features)
+                        vt_writer.writerow(targets)
+                    else:
+                        tf_writer.writerow(features)
+                        tt_writer.writerow(targets)
                     print("Entries found: " + str(count), end="\r")
                 else:
                     parser.increment()
 
         print("Example entries parsed: " + str(count))
-        print("Example features and target values written to csvs in current directory.")
+        print("Example features and target values written to csvs in ouput directory.")
     elif len(files) == 1:
         print("At least 2 valid HDF GFED files required but found 1.")
     else:
@@ -265,4 +274,5 @@ def validate_and_parse(directory):
 if __name__ == "__main__":
     parser = ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
     parser.add_argument("directory", help="Directory with GFED4.1s_yyyy HDF files")
-    validate_and_parse(parser.parse_args().directory)
+    parser.add_argument("--size", type=int, help="No. of entries to extract", default=1000)
+    validate_and_parse(parser.parse_args().directory, parser.parse_args().size)
