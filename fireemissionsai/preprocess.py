@@ -3,7 +3,9 @@ the path to a directory containing NASA EarthData Global Fire Emissions
 Database GFED4.1s_yyyy.hdf5 files.
 
 If a valid directory path is passed to the utility it should validate any hdf
-files in the directory and output feedback.
+files in the directory and output feedback. Additionally an 'ouput' directory
+will be created and training and validation .csv files will be created containing
+example data.
 
 The preprocess module also acts as an importable source of valdation and a
 means of streaming training entries and their target outputs from specified
@@ -18,7 +20,6 @@ import h5py
 import pprint
 import itertools
 from argparse import ArgumentParser, RawTextHelpFormatter
-
 
 # -------------------------------------------------
 # Utility functions class defined below.

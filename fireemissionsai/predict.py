@@ -23,3 +23,8 @@ estimator = tf.estimator.DNNRegressor(
        l1_regularization_strength=0.001
     )
 )
+
+features_train = np.genfromtxt('output/train-features.csv', delimiter=',')
+targets_train = np.genfromtxt('output/train-targets.csv', delimiter=',')
+features_test = np.genfromtxt('output/test-features.csv', delimiter=',')
+targets_test = np.genfromtxt('output/test-targets.csv', delimiter=',')
