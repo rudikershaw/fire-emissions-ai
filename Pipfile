@@ -10,7 +10,7 @@ name = "pypi"
 "h5py" = "*"
 pipenv = "*"
 tables = "*"
-keras = "*"
+Keras = "*"
 tensorflow = "*"
 
 
