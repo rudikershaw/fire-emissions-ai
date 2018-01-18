@@ -7,10 +7,11 @@ name = "pypi"
 
 [packages]
 
-tensorflow = "*"
 "h5py" = "*"
 pipenv = "*"
 tables = "*"
+keras = "*"
+tensorflow = "*"
 
 
 [dev-packages]
