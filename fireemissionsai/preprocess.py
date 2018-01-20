@@ -108,19 +108,23 @@ class GFEDDataParser:
 
     def get_entry(self, i: int, j: int):
         """Gets an entry from position i,j in current file."""
-        m = self.month
+        ic = re.IGNORECASE
+        name = self.files[self.f].filename
+        search = re.search('_(\d{4})\.(hdf$|hdf4$|hdf5$|h4$|h5$|he2$|he5$)', name, ic)
         hdf = self.files[self.f]
-        return {
-            "lat" : hdf["lat"][i][j],
-            "lon" : hdf["lon"][i][j],
-            "region" : hdf["ancill/basis_regions"][i][j],
-            "BB" : hdf["biosphere/{:02d}/BB".format(m)][i][j],
-            "NPP" : hdf["biosphere/{:02d}/NPP".format(m)][i][j],
-            "Rh" : hdf["biosphere/{:02d}/Rh".format(m)][i][j],
-            "C" : hdf["emissions/{:02d}/C".format(m)][i][j],
-            "DM" : hdf["emissions/{:02d}/DM".format(m)][i][j],
-            "burned" : hdf["burned_area/{:02d}/burned_fraction".format(m)][i][j]
-        }
+        return [
+            search.group(1), # Year
+            self.month,
+            hdf["lat"][i][j],
+            hdf["lon"][i][j],
+            hdf["ancill/basis_regions"][i][j],
+            hdf["biosphere/{:02d}/BB".format(self.month)][i][j],
+            hdf["biosphere/{:02d}/NPP".format(self.month)][i][j],
+            hdf["biosphere/{:02d}/Rh".format(self.month)][i][j],
+            hdf["emissions/{:02d}/C".format(self.month)][i][j],
+            hdf["emissions/{:02d}/DM".format(self.month)][i][j],
+            hdf["burned_area/{:02d}/burned_fraction".format(self.month)][i][j]
+        ]
 
     def get_target(self, i: int, j: int):
         """Gets an entry from position i,j in file f+plus in files."""
@@ -155,41 +159,7 @@ class GFEDDataParser:
 
     def next(self):
         """Parses and converts the next training example."""
-        ic = re.IGNORECASE
-        name = self.files[self.f].filename
-        search = re.search('_(\d{4})\.(hdf$|hdf4$|hdf5$|h4$|h5$|he2$|he5$)', name, ic)
-        training = [
-            # Year
-            search.group(1),
-            # Month
-            self.month,
-        ]
-        lons, lats, regions, bbs, npps, rhs, cs, dms, burns = [[] for i in range(9)]
-        for x, y in itertools.product(range(-2, 3), range(-2, 3)):
-            ti, tj = self.i - x, self.j - y
-            # Wrap matrix if values fall off bottom.
-            if ti < 0:
-                ti = self.max_i + ti
-            if tj < 0:
-                tj = self.max_j + tj
-            # Use modulus to wrap matrix if values fall off top.
-            if ti != 0:
-                ti = (self.max_i - 1) % ti
-            if tj != 0:
-                tj = (self.max_j - 1) % tj
-
-            entry = self.get_entry(ti, tj)
-            lons.append(entry["lon"])
-            lats.append(entry["lat"])
-            regions.append(entry["region"])
-            bbs.append(entry["BB"])
-            npps.append(entry["NPP"])
-            rhs.append(entry["Rh"])
-            cs.append(entry["C"])
-            dms.append(entry["DM"])
-            burns.append(entry["burned"])
-
-        training += lons + lats + regions + bbs + npps + rhs + cs + dms + burns
+        training = self.get_entry(self.i, self.j)
         target = self.get_target(self.i, self.j)
         self.increment()
         return (training, target)
