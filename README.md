@@ -9,9 +9,11 @@ Fire Emissions AI is an [artificial neural network](https://en.wikipedia.org/wik
 3. Install dependencies for the project using `$ pipenv install`
 4. Run the unit tests to ensure correct behavior `$ pipenv run python setup.py test`.
 5. Run the preprocess.py with `$ pipenv run python fireemissionsai/preprocess.py [directory containing hdfs]`.
-6. To be continued...
+6. Run the predict.py with `$ pipenv run python fireemissionsai/predict.py`
 
-The repository contains two main scripts; `fireemissionsai/predict.py` and `fireemissionsai/preprocess.py`. The former contains the code relating to the neural network directly (including training, testing, and eventually predicting), the latter contains the code for a utility used to convert the Global Fire Emissions Database files into training examples for the predictor.
+The repository contains two main scripts; `fireemissionsai/predict.py` and `fireemissionsai/preprocess.py`. The former contains the code relating to the neural network directly (including training, testing, and eventually predicting), the latter contains the code for a utility used to convert the Global Fire Emissions Database files into training examples for the predictor. The preprocess.py outputs .csv files that are used for training the predictor.
+
+In a future release, the predictor will be set up to use a pre-trained model and act as a means of predicting future values from a .csv containing values to make predictions from. Currently the predict.py script only trains a model on provided data and outputs accuracy and loss values and prints a file with some example predictions.
 
 # References
 
