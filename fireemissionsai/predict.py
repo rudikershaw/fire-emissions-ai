@@ -5,6 +5,9 @@ from keras.layers import Dense, BatchNormalization
 features_train = np.genfromtxt('output/train-features.csv', delimiter=',')
 targets_train = np.genfromtxt('output/train-targets.csv', delimiter=',')
 
+features_validation = np.genfromtxt('output/validation-features.csv', delimiter=',')
+targets_validation = np.genfromtxt('output/validation-targets.csv', delimiter=',')
+
 features_test = np.genfromtxt('output/test-features.csv', delimiter=',')
 targets_test = np.genfromtxt('output/test-targets.csv', delimiter=',')
 
@@ -19,9 +22,11 @@ model.compile(loss='mean_absolute_error', optimizer=sgd, metrics=['accuracy'])
 model.fit(
     features_train,
     targets_train,
-    epochs=20,
-    validation_data=(features_test, targets_test)
+    epochs=10,
+    validation_data=(features_validation, targets_validation)
 )
+
+print("\nTest evaluation: " + str(model.evaluate(features_test, targets_test)) + "\n")
 
 print("\nPredicted: ")
 predictions = model.predict(features_test)

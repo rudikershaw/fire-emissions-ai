@@ -215,22 +215,28 @@ def validate_and_parse(directory, size):
         # Create csvs for features and targets for training and testing.
         if not os.path.isdir("output"):
             os.makedirs("output")
-        tf, tt = "output/train-features.csv", "output/train-targets.csv"
-        vf, vt = "output/test-features.csv", "output/test-targets.csv"
-        with open(tf, "w") as csv_tf, open(tt, "w") as csv_tt, \
-             open(vf, "w") as csv_vf, open(vt, "w") as csv_vt:
-            tf_writer, tt_writer = csv.writer(csv_tf), csv.writer(csv_tt)
-            vf_writer, vt_writer = csv.writer(csv_vf), csv.writer(csv_vt)
+        trainf, traint = "output/train-features.csv", "output/train-targets.csv"
+        valf, valt = "output/validation-features.csv", "output/validation-targets.csv"
+        testf, testt = "output/test-features.csv", "output/test-targets.csv"
+        with open(trainf, "w") as csv_trainf, open(traint, "w") as csv_traint, \
+             open(valf, "w") as csv_valf, open(valt, "w") as csv_valt, \
+             open(testf, "w") as csv_testf, open(testt, "w") as csv_testt:
+            trainf_writer, traint_writer = csv.writer(csv_trainf), csv.writer(csv_traint)
+            valf_writer, valt_writer = csv.writer(csv_valf), csv.writer(csv_valt)
+            testf_writer, testt_writer = csv.writer(csv_testf), csv.writer(csv_testt)
             while parser.has_next() and count < size:
                 if parser.files[parser.f]["ancill/basis_regions"][parser.i][parser.j] != 0:
                     count += 1
                     features, targets = parser.next()
                     if (count % 10) == 0:
-                        vf_writer.writerow(features)
-                        vt_writer.writerow(targets)
+                        valf_writer.writerow(features)
+                        valt_writer.writerow(targets)
+                    elif (count % 25) == 0:
+                        testf_writer.writerow(features)
+                        testt_writer.writerow(targets)
                     else:
-                        tf_writer.writerow(features)
-                        tt_writer.writerow(targets)
+                        trainf_writer.writerow(features)
+                        traint_writer.writerow(targets)
                     print("Entries found: " + str(count), end="\r")
                 else:
                     parser.increment()

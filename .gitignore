@@ -1,9 +1,5 @@
 # Application ouput files.
-output/train-features.csv
-output/train-targets.csv
-output/test-features.csv
-output/test-targets.csv
-output/test-predictions.csv
+output/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
