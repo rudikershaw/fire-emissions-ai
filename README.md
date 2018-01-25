@@ -7,7 +7,7 @@ Fire Emissions AI is an [artificial neural network](https://en.wikipedia.org/wik
 1. You will need [Python 3.5](https://www.python.org/downloads/) or greater installed.
 2. Install Pipenv, if you do not already have it, with `$ pip install pipenv`.
 3. Install dependencies for the project using `$ pipenv install`
-4. Run the unit tests to ensure correct behavior `$ pipenv run python setup.py test`.
+4. Run the unit tests and linters to ensure correct behavior `$ pipenv run python setup.py test`.
 5. Run the preprocess.py with `$ pipenv run python fireemissionsai/preprocess.py [directory containing hdfs]`.
 6. Run the predict.py with `$ pipenv run python fireemissionsai/predict.py`
 
