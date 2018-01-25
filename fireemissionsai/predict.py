@@ -17,12 +17,12 @@ model.add(BatchNormalization())
 model.add(Dense(units=112, activation='relu'))
 model.add(Dense(units=targets_train.shape[1], activation='relu'))
 
-sgd = keras.optimizers.SGD(lr=0.01, momentum=0.4, decay=1e-6)
+sgd = keras.optimizers.SGD(lr=0.02, momentum=0.8, decay=1e-6)
 model.compile(loss='mean_absolute_error', optimizer=sgd, metrics=['accuracy'])
 model.fit(
     features_train,
     targets_train,
-    epochs=10,
+    epochs=40,
     validation_data=(features_validation, targets_validation)
 )
 

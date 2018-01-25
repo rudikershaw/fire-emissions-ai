@@ -15,11 +15,9 @@ valid hdf files.
 import re
 import os
 import csv
-import json
-import h5py
-import pprint
-import itertools
 from argparse import ArgumentParser, RawTextHelpFormatter
+
+import h5py
 
 # -------------------------------------------------
 # Utility functions class defined below.
@@ -28,11 +26,11 @@ class Validator:
     """Used to validate hdf files to ensure they conform to the GFED format."""
 
     @staticmethod
-    def valid_hdf_file(f: str):
+    def valid_hdf_file(file_path: str):
         """Returns true if this file exists and has the correct extension."""
-        ic = re.IGNORECASE
-        match = re.search('_(\d{4})\.(hdf$|hdf4$|hdf5$|h4$|h5$|he2$|he5$)', f, ic)
-        if os.path.isfile(f) and match != None:
+        regex_string = r'_(\d{4})\.(hdf$|hdf4$|hdf5$|h4$|h5$|he2$|he5$)'
+        match = re.search(regex_string, file_path, re.IGNORECASE)
+        if os.path.isfile(file_path) and match != None:
             return True
         return False
 
@@ -73,7 +71,7 @@ class Validator:
                 valid = False
                 print(expected_message.format(group, hdf.filename))
         for group in "biosphere", "burned_area", "emissions":
-            for month in range(1,13):
+            for month in range(1, 13):
                 full_group = "{}/{:02d}".format(group, month)
                 if full_group not in hdf:
                     valid = False
@@ -91,7 +89,7 @@ class GFEDDataParser:
     positions and their emissions data, as well as a singular target tuple.
     """
 
-    def __init__ (self, files):
+    def __init__(self, files):
         """files should be a touple of h5py hdf file objects ending _yyyy.hdf5.
 
         This touple of files provided should only include files pre-validated
@@ -100,18 +98,22 @@ class GFEDDataParser:
         self.files = files
         self.max_i, self.max_j = files[0]["ancill/basis_regions"].shape
         # The index of the current file being processed.
-        self.f = 0
+        self.file_no = 0
         # The current month being processed.
         self.month = 1
         # Current index for looping through lat long matrices.
         self.i, self.j = 0, 0
 
+    def current_file(self, next_file=False):
+        """Gets the current hdf file or the following file if next=True."""
+        return self.files[self.file_no + (1 if next_file else 0)]
+
     def get_entry(self, i: int, j: int):
         """Gets an entry from position i,j in current file."""
-        ic = re.IGNORECASE
-        name = self.files[self.f].filename
-        search = re.search('_(\d{4})\.(hdf$|hdf4$|hdf5$|h4$|h5$|he2$|he5$)', name, ic)
-        hdf = self.files[self.f]
+        hdf = self.current_file()
+        name = hdf.filename
+        regex_string = r'_(\d{4})\.(hdf$|hdf4$|hdf5$|h4$|h5$|he2$|he5$)'
+        search = re.search(regex_string, name, re.IGNORECASE)
         return [
             search.group(1), # Year
             self.month,
@@ -129,15 +131,15 @@ class GFEDDataParser:
     def get_target(self, i: int, j: int):
         """Gets an entry from position i,j in file f+plus in files."""
         if self.has_next_month() or self.has_next_file():
-            m = self.month + 1 if self.has_next_month() else 1
-            hdf = self.files[self.f] if m > 1 else self.files[self.f + 1]
+            target_month = self.month + 1 if self.has_next_month() else 1
+            hdf = self.current_file() if target_month > 1 else self.current_file(next_file=True)
             return [
-                hdf["biosphere/{:02d}/BB".format(m)][i][j],
-                hdf["biosphere/{:02d}/NPP".format(m)][i][j],
-                hdf["biosphere/{:02d}/Rh".format(m)][i][j],
-                hdf["emissions/{:02d}/C".format(m)][i][j],
-                hdf["emissions/{:02d}/DM".format(m)][i][j],
-                hdf["burned_area/{:02d}/burned_fraction".format(m)][i][j]
+                hdf["biosphere/{:02d}/BB".format(target_month)][i][j],
+                hdf["biosphere/{:02d}/NPP".format(target_month)][i][j],
+                hdf["biosphere/{:02d}/Rh".format(target_month)][i][j],
+                hdf["emissions/{:02d}/C".format(target_month)][i][j],
+                hdf["emissions/{:02d}/DM".format(target_month)][i][j],
+                hdf["burned_area/{:02d}/burned_fraction".format(target_month)][i][j]
             ]
         return []
 
@@ -151,7 +153,7 @@ class GFEDDataParser:
 
     def has_next_file(self):
         """Checks whether there is another file after the current file."""
-        return self.f < (len(self.files) - 1)
+        return self.file_no < (len(self.files) - 1)
 
     def has_next(self):
         """Checks whether there is another entry to parse."""
@@ -188,44 +190,48 @@ class GFEDDataParser:
             return
         if self.has_next_file():
             self.reset(i_b=True, j_b=True)
-            self.f += 1
+            self.file_no += 1
         return
 
 
 # -------------------------------------------------
 # Script starts here.
 # -------------------------------------------------
+def valid_files(directory):
+    """Collects and returns all valid files in the provided directory."""
+    files = []
+    for file_name in sorted(os.listdir(directory)):
+        full_path = directory + file_name
+        if Validator.valid_hdf_file(full_path) and Validator.valid_hdf_structure(full_path):
+            files.append(h5py.File(full_path, 'r'))
+            print("  " + file_name)
+    return files
+
 def validate_and_parse(directory, size):
     """Validates the files in a directory for GFED format and parses them."""
     print("Processing files in directory '" + directory + "'.")
     print("The following files adhere to the expected GFED format.")
-    files = []
-    for fi in sorted(os.listdir(directory)):
-        full_path = directory + fi
-        if Validator.valid_hdf_file(full_path) and Validator.valid_hdf_structure(full_path):
-            files.append(h5py.File(full_path, 'r'))
-            print("  " + fi)
+    files = valid_files(directory)
 
     print("...")
     if len(files) > 1:
         print("Directory contains valid GFED HDF files for training data.")
         parser = GFEDDataParser(files)
-        pp = pprint.PrettyPrinter(indent=4)
         count = 0
         # Create csvs for features and targets for training and testing.
         if not os.path.isdir("output"):
             os.makedirs("output")
-        trainf, traint = "output/train-features.csv", "output/train-targets.csv"
-        valf, valt = "output/validation-features.csv", "output/validation-targets.csv"
-        testf, testt = "output/test-features.csv", "output/test-targets.csv"
-        with open(trainf, "w") as csv_trainf, open(traint, "w") as csv_traint, \
-             open(valf, "w") as csv_valf, open(valt, "w") as csv_valt, \
-             open(testf, "w") as csv_testf, open(testt, "w") as csv_testt:
+        with open("output/train-features.csv", "w") as csv_trainf, \
+             open("output/train-targets.csv", "w") as csv_traint, \
+             open("output/validation-features.csv", "w") as csv_valf, \
+             open("output/validation-targets.csv", "w") as csv_valt, \
+             open("output/test-features.csv", "w") as csv_testf, \
+             open("output/test-targets.csv", "w") as csv_testt:
             trainf_writer, traint_writer = csv.writer(csv_trainf), csv.writer(csv_traint)
             valf_writer, valt_writer = csv.writer(csv_valf), csv.writer(csv_valt)
             testf_writer, testt_writer = csv.writer(csv_testf), csv.writer(csv_testt)
             while parser.has_next() and count < size:
-                if parser.files[parser.f]["ancill/basis_regions"][parser.i][parser.j] != 0:
+                if parser.current_file()["ancill/basis_regions"][parser.i][parser.j] != 0:
                     count += 1
                     features, targets = parser.next()
                     if (count % 10) == 0:
@@ -249,7 +255,7 @@ def validate_and_parse(directory, size):
         print("No valid HDF GFED files found in that directory.")
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
-    parser.add_argument("directory", help="Directory with GFED4.1s_yyyy HDF files")
-    parser.add_argument("--size", type=int, help="No. of entries to extract", default=1000)
-    validate_and_parse(parser.parse_args().directory, parser.parse_args().size)
+    PARSER = ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
+    PARSER.add_argument("directory", help="Directory with GFED4.1s_yyyy HDF files")
+    PARSER.add_argument("--size", type=int, help="No. of entries to extract", default=1000)
+    validate_and_parse(PARSER.parse_args().directory, PARSER.parse_args().size)

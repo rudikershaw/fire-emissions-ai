@@ -10,8 +10,11 @@ name = "pypi"
 "h5py" = "*"
 pipenv = "*"
 tables = "*"
-Keras = "*"
+keras = "*"
 tensorflow = "*"
+astroid = "*"
+isort = "*"
+pylint = "*"
 
 
 [dev-packages]

@@ -1,7 +1,9 @@
-import h5py
 import os.path
 import tempfile
+
+import h5py
 from unittest import TestCase
+from pylint import epylint as lint
 from fireemissionsai.preprocess import Validator, GFEDDataParser
 
 class TestValidator(TestCase):
@@ -58,3 +60,10 @@ class TestParser(TestCase):
             parser.increment()
         self.assertFalse(parser.has_next_coordinate())
         self.assertFalse(parser.has_next())
+
+class TestzPylint(TestCase):
+    """Runs Pylint on the preprocess.py."""
+
+    def test_run_lint(self):
+        """Runs Pylint on the preprocess.py."""
+        lint.py_run("fireemissionsai/preprocess.py")
