@@ -17,11 +17,11 @@ if __name__ == "__main__":
     TRAIN_X = np.genfromtxt('output/train-features.csv', delimiter=',')
     TRAIN_Y = np.genfromtxt('output/train-targets.csv', delimiter=',')
 
-    MODEL = construct_model(TRAIN_X[1].shape, TRAIN_Y[1].shape)
+    MODEL = construct_model(TRAIN_X.shape[1], TRAIN_Y.shape[1])
     MODEL.fit(
         TRAIN_X,
         TRAIN_Y,
-        epochs=40,
+        epochs=1,
         validation_data=(
             np.genfromtxt('output/validation-features.csv', delimiter=','),
             np.genfromtxt('output/validation-targets.csv', delimiter=',')
