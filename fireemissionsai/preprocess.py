@@ -19,68 +19,6 @@ from argparse import ArgumentParser, RawTextHelpFormatter
 
 import h5py
 
-# -------------------------------------------------
-# Utility functions class defined below.
-# -------------------------------------------------
-class Validator:
-    """Used to validate hdf files to ensure they conform to the GFED format."""
-
-    @staticmethod
-    def valid_hdf_file(file_path: str):
-        """Returns true if this file exists and has the correct extension."""
-        regex_string = r'_(\d{4})\.(hdf$|hdf4$|hdf5$|h4$|h5$|he2$|he5$)'
-        match = re.search(regex_string, file_path, re.IGNORECASE)
-        if os.path.isfile(file_path) and match != None:
-            return True
-        return False
-
-    @staticmethod
-    def valid_leaf_groups(group: str, month: str, hdf: h5py.File):
-        """Checks all expected groups within month specific groups exist.
-
-        Function prints errors to the console if they cannot be found. Returns
-        true if all expected groups are present, otherwise false.
-        """
-        groups_and_leaves = {
-            "biosphere": ("BB", "NPP", "Rh"),
-            "burned_area": ("burned_fraction",),
-            "emissions": ("C", "DM")
-        }
-        valid = True
-        expected_message = "Expected group '{}' not in HDF file '{}'"
-        for leaf in groups_and_leaves[group]:
-            full_group = "{}/{:02d}/{}".format(group, month, leaf)
-            if full_group not in hdf:
-                valid = False
-                print(expected_message.format(full_group, hdf.filename))
-        return valid
-
-
-    @staticmethod
-    def valid_hdf_structure(file_path: str):
-        """Checks all groups and group months exists in the file.
-
-        Prints errors to the console if expected groups cannot be found.
-        Returns true if all expected groups are present, otherwise false.
-        """
-        hdf = h5py.File(file_path, 'r')
-        valid = True
-        expected_message = "Expected group '{}' not in HDF file '{}'"
-        for group in "ancill/basis_regions", "lon", "lat":
-            if group not in hdf:
-                valid = False
-                print(expected_message.format(group, hdf.filename))
-        for group in "biosphere", "burned_area", "emissions":
-            for month in range(1, 13):
-                full_group = "{}/{:02d}".format(group, month)
-                if full_group not in hdf:
-                    valid = False
-                    print(expected_message.format(full_group, hdf.filename))
-                else:
-                    valid = valid and Validator.valid_leaf_groups(group, month, hdf)
-        return valid
-
-
 class GFEDDataParser:
     """Used to create a streamer object that parses groups of valid GFED files.
 
@@ -93,7 +31,7 @@ class GFEDDataParser:
         """files should be a touple of h5py hdf file objects ending _yyyy.hdf5.
 
         This touple of files provided should only include files pre-validated
-        by the preprocess.Validator methods.
+        by the preprocess validator methods.
         """
         self.files = files
         self.max_i, self.max_j = files[0]["ancill/basis_regions"].shape
@@ -194,15 +132,63 @@ class GFEDDataParser:
         return
 
 
-# -------------------------------------------------
-# Script starts here.
-# -------------------------------------------------
+def valid_hdf_file(file_path: str):
+    """Returns true if this file exists and has the correct extension."""
+    regex_string = r'_(\d{4})\.(hdf$|hdf4$|hdf5$|h4$|h5$|he2$|he5$)'
+    match = re.search(regex_string, file_path, re.IGNORECASE)
+    if os.path.isfile(file_path) and match != None:
+        return True
+    return False
+
+def valid_leaf_groups(group: str, month: str, hdf: h5py.File):
+    """Checks all expected groups within month specific groups exist.
+
+    Function prints errors to the console if they cannot be found. Returns
+    true if all expected groups are present, otherwise false.
+    """
+    groups_and_leaves = {
+        "biosphere": ("BB", "NPP", "Rh"),
+        "burned_area": ("burned_fraction",),
+        "emissions": ("C", "DM")
+    }
+    valid = True
+    expected_message = "Expected group '{}' not in HDF file '{}'"
+    for leaf in groups_and_leaves[group]:
+        full_group = "{}/{:02d}/{}".format(group, month, leaf)
+        if full_group not in hdf:
+            valid = False
+            print(expected_message.format(full_group, hdf.filename))
+    return valid
+
+def valid_hdf_structure(file_path: str):
+    """Checks all groups and group months exists in the file.
+
+    Prints errors to the console if expected groups cannot be found.
+    Returns true if all expected groups are present, otherwise false.
+    """
+    hdf = h5py.File(file_path, 'r')
+    valid = True
+    expected_message = "Expected group '{}' not in HDF file '{}'"
+    for group in "ancill/basis_regions", "lon", "lat":
+        if group not in hdf:
+            valid = False
+            print(expected_message.format(group, hdf.filename))
+    for group in "biosphere", "burned_area", "emissions":
+        for month in range(1, 13):
+            full_group = "{}/{:02d}".format(group, month)
+            if full_group not in hdf:
+                valid = False
+                print(expected_message.format(full_group, hdf.filename))
+            else:
+                valid = valid and valid_leaf_groups(group, month, hdf)
+    return valid
+
 def valid_files(directory):
     """Collects and returns all valid files in the provided directory."""
     files = []
     for file_name in sorted(os.listdir(directory)):
         full_path = directory + file_name
-        if Validator.valid_hdf_file(full_path) and Validator.valid_hdf_structure(full_path):
+        if valid_hdf_file(full_path) and valid_hdf_structure(full_path):
             files.append(h5py.File(full_path, 'r'))
             print("  " + file_name)
     return files

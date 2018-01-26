@@ -4,7 +4,7 @@ import tempfile
 import h5py
 from unittest import TestCase
 from pylint import epylint as lint
-from fireemissionsai.preprocess import Validator, GFEDDataParser
+from fireemissionsai import preprocess
 
 class TestValidator(TestCase):
     """Test the preprocess.Validator."""
@@ -12,9 +12,9 @@ class TestValidator(TestCase):
     def test_valid_arguments(self):
         """Test the Validator.valid_arguments and valid_hdf_file functions."""
         # It is not valid to provide a file that does not exist.
-        self.assertFalse(Validator.valid_hdf_file("file_doesnt_exist.hdf5"))
+        self.assertFalse(preprocess.valid_hdf_file("file_doesnt_exist.hdf5"))
         # It is valid to provide a hdf file that actually exists.
-        self.assertTrue(Validator.valid_hdf_file("tests/resources/empty_2018.hdf5"))
+        self.assertTrue(preprocess.valid_hdf_file("tests/resources/empty_2018.hdf5"))
 
     def test_valid_hdf_structure(self):
         """Test the Validator.valid_hdf_file and valid_leaf_groups functions."""
@@ -22,9 +22,9 @@ class TestValidator(TestCase):
         tmp_file = os.path.join(tempfile.gettempdir(), uid + ".hdf5")
         h5py.File(tmp_file, 'w').close()
         # Providing empty hdf5 file is not valid.
-        self.assertFalse(Validator.valid_hdf_structure(tmp_file))
+        self.assertFalse(preprocess.valid_hdf_structure(tmp_file))
         # Providing GFED format hdf file is valid.
-        self.assertTrue(Validator.valid_hdf_structure("tests/resources/min_2018.hdf5"))
+        self.assertTrue(preprocess.valid_hdf_structure("tests/resources/min_2018.hdf5"))
 
 
 class TestParser(TestCase):
@@ -32,7 +32,7 @@ class TestParser(TestCase):
 
     def test_incremement_and_has_nexts(self):
         """Test the basic construction, incremeneting, and has_next functions."""
-        parser = GFEDDataParser([h5py.File('tests/resources/min_2018.hdf5', 'r')])
+        parser = preprocess.GFEDDataParser([h5py.File('tests/resources/min_2018.hdf5', 'r')])
         self.assertEqual(parser.month, 1)
         self.assertEqual(parser.i, 0)
         self.assertTrue(parser.has_next())
