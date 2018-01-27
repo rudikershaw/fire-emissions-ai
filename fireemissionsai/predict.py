@@ -13,14 +13,10 @@ def construct_model(input_shape, output_shape):
     model.compile(loss='mean_absolute_error', optimizer=sgd, metrics=['accuracy'])
     return model
 
-if __name__ == "__main__":
-    TRAIN_X = np.genfromtxt('output/train-features.csv', delimiter=',')
-    TRAIN_Y = np.genfromtxt('output/train-targets.csv', delimiter=',')
-
-    MODEL = construct_model(TRAIN_X.shape[1], TRAIN_Y.shape[1])
-    MODEL.fit(
-        TRAIN_X,
-        TRAIN_Y,
+def train_validate_test_print(model, train_x, train_y):
+    model.fit(
+        train_x,
+        train_y,
         epochs=1,
         validation_data=(
             np.genfromtxt('output/validation-features.csv', delimiter=','),
@@ -28,18 +24,25 @@ if __name__ == "__main__":
         )
     )
 
-    TEST_X = np.genfromtxt('output/test-features.csv', delimiter=',')
-    TEST_Y = np.genfromtxt('output/test-targets.csv', delimiter=',')
+    test_x = np.genfromtxt('output/test-features.csv', delimiter=',')
+    test_y = np.genfromtxt('output/test-targets.csv', delimiter=',')
 
-    print("\nTest evaluation: " + str(MODEL.evaluate(TEST_X, TEST_Y)) + "\n")
+    print("\nTest evaluation: " + str(model.evaluate(test_x, test_y)) + "\n")
 
     print("\nPredicted: ")
-    PREDICTIONS = MODEL.predict(TEST_X)
-    print(PREDICTIONS)
+    predictions = model.predict(test_x)
+    print(predictions)
 
     print("\nExpected: ")
-    print(TEST_Y[0:3])
+    print(test_y[0:3])
     print("...,")
-    print(TEST_Y[len(TEST_Y)-3:len(TEST_Y)])
+    print(test_y[len(test_y)-3:len(test_y)])
 
-    np.savetxt('output/test-predictions.csv', PREDICTIONS, delimiter=',')
+    np.savetxt('output/test-predictions.csv', predictions, delimiter=',')
+
+if __name__ == "__main__":
+    TRAIN_X = np.genfromtxt('output/train-features.csv', delimiter=',')
+    TRAIN_Y = np.genfromtxt('output/train-targets.csv', delimiter=',')
+
+    MODEL = construct_model(TRAIN_X.shape[1], TRAIN_Y.shape[1])
+    train_validate_test_print(MODEL, TRAIN_X, TRAIN_Y)
