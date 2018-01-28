@@ -17,7 +17,7 @@ def train_validate_test_print(model, train_x, train_y):
     model.fit(
         train_x,
         train_y,
-        epochs=1,
+        epochs=40,
         validation_data=(
             np.genfromtxt('output/validation-features.csv', delimiter=','),
             np.genfromtxt('output/validation-targets.csv', delimiter=',')

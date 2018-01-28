@@ -216,20 +216,25 @@ def validate_and_parse(directory, size):
             trainf_writer, traint_writer = csv.writer(csv_trainf), csv.writer(csv_traint)
             valf_writer, valt_writer = csv.writer(csv_valf), csv.writer(csv_valt)
             testf_writer, testt_writer = csv.writer(csv_testf), csv.writer(csv_testt)
+            dropped_last_entry = False
             while parser.has_next() and count < size:
                 if parser.current_file()["ancill/basis_regions"][parser.i][parser.j] != 0:
-                    count += 1
                     features, targets = parser.next()
-                    if (count % 10) == 0:
-                        valf_writer.writerow(features)
-                        valt_writer.writerow(targets)
-                    elif (count % 25) == 0:
-                        testf_writer.writerow(features)
-                        testt_writer.writerow(targets)
+                    if dropped_last_entry or targets[len(targets) - 1] != 0:
+                        dropped_last_entry = False
+                        count += 1
+                        if (count % 10) == 0:
+                            valf_writer.writerow(features)
+                            valt_writer.writerow(targets)
+                        elif (count % 25) == 0:
+                            testf_writer.writerow(features)
+                            testt_writer.writerow(targets)
+                        else:
+                            trainf_writer.writerow(features)
+                            traint_writer.writerow(targets)
+                        print("Entries found: " + str(count), end="\r")
                     else:
-                        trainf_writer.writerow(features)
-                        traint_writer.writerow(targets)
-                    print("Entries found: " + str(count), end="\r")
+                        accepted_last_entry = True
                 else:
                     parser.increment()
 
