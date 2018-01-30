@@ -1,8 +1,11 @@
+"""The predict module is for creating and training a model, and eventually prediction."""
+
 import keras
 import numpy as np
 from keras.layers import Dense, BatchNormalization
 
 def construct_model(input_shape, output_shape):
+    """Construct the model for predicting next month's fire emissions data."""
     model = keras.models.Sequential()
     model.add(Dense(units=112, activation='relu', input_dim=input_shape))
     model.add(BatchNormalization())
@@ -14,6 +17,7 @@ def construct_model(input_shape, output_shape):
     return model
 
 def train_validate_test_print(model, train_x, train_y):
+    """Train a provided model on the provided training set."""
     model.fit(
         train_x,
         train_y,

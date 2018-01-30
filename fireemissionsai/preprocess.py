@@ -1,4 +1,4 @@
-"""The preprocess.py module main script is designed to take a single argument,
+"""The preprocess module main script is designed to take a single argument,
 the path to a directory containing NASA EarthData Global Fire Emissions
 Database GFED4.1s_yyyy.hdf5 files.
 
@@ -234,7 +234,7 @@ def validate_and_parse(directory, size):
                             traint_writer.writerow(targets)
                         print("Entries found: " + str(count), end="\r")
                     else:
-                        accepted_last_entry = True
+                        dropped_last_entry = True
                 else:
                     parser.increment()
 
