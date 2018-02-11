@@ -7,9 +7,10 @@ from keras.layers import Dense, BatchNormalization
 def construct_model(input_shape, output_shape):
     """Construct the model for predicting next month's fire emissions data."""
     model = keras.models.Sequential()
-    model.add(Dense(units=112, activation='relu', input_dim=input_shape))
+    model.add(Dense(units=512, activation='relu', input_dim=input_shape))
     model.add(BatchNormalization())
-    model.add(Dense(units=112, activation='relu'))
+    model.add(Dense(units=512, activation='relu'))
+    model.add(Dense(units=512, activation='relu'))
     model.add(Dense(units=output_shape, activation='relu'))
 
     sgd = keras.optimizers.SGD(lr=0.02, momentum=0.8, decay=1e-6)
@@ -21,7 +22,7 @@ def train_validate_test_print(model, train_x, train_y):
     model.fit(
         train_x,
         train_y,
-        epochs=40,
+        epochs=20,
         validation_data=(
             np.genfromtxt('output/validation-features.csv', delimiter=','),
             np.genfromtxt('output/validation-targets.csv', delimiter=',')
