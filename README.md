@@ -20,7 +20,7 @@ The repository contains two main scripts; `fireemissionsai/predict.py` and `fire
 
 To train the predictor on your own data simply do the following.
 
-1. Run the preprocess.py with `$ pipenv run python fireemissionsai/preprocess.py [directory containing GFED hdfs]`.
+1. Run the preprocess.py with `$ pipenv run python fireemissionsai/preprocess.py [GFED hdfs directory]`.
 2. Run the predict.py with `$ pipenv run python fireemissionsai/predict.py [path to .csv] --retrain --persist`.
 
 Using the `--persist` flag will save your newly trained model and weights over the existing model. To train a model for one-time-use simply omit the `--persist` flag.
