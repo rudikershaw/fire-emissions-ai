@@ -193,7 +193,30 @@ def valid_files(directory):
             print("  " + file_name)
     return files
 
-def validate_and_parse(directory, size):
+def get_subsample(parser, ratio):
+    """Gets subsample of training data with a minimum ratio of negative to positive."""
+    entries = []
+    while parser.has_next():
+        if parser.current_file()["ancill/basis_regions"][parser.i][parser.j] != 0:
+            features, targets = parser.next()
+            if len(targets) == 0:
+                break
+            if targets[len(targets) - 1] == 0:
+                entries.append([features, targets])
+                if ratio > 0:
+                    if len(entries) > ratio:
+                        entries.pop(0)
+                else:
+                    return entries
+            else:
+                entries.append([features, targets])
+                return entries
+        else:
+            parser.increment()
+
+    return entries
+
+def validate_and_parse(directory, size, ratio):
     """Validates the files in a directory for GFED format and parses them."""
     print("Processing files in directory '" + directory + "'.")
     print("The following files adhere to the expected GFED format.")
@@ -216,27 +239,26 @@ def validate_and_parse(directory, size):
             trainf_writer, traint_writer = csv.writer(csv_trainf), csv.writer(csv_traint)
             valf_writer, valt_writer = csv.writer(csv_valf), csv.writer(csv_valt)
             testf_writer, testt_writer = csv.writer(csv_testf), csv.writer(csv_testt)
-            dropped_last_entry = False
-            while parser.has_next() and count < size:
-                if parser.current_file()["ancill/basis_regions"][parser.i][parser.j] != 0:
-                    features, targets = parser.next()
-                    if dropped_last_entry or targets[len(targets) - 1] != 0:
-                        dropped_last_entry = False
-                        count += 1
-                        if (count % 10) == 0:
-                            valf_writer.writerow(features)
-                            valt_writer.writerow(targets)
-                        elif (count % 25) == 0:
-                            testf_writer.writerow(features)
-                            testt_writer.writerow(targets)
-                        else:
-                            trainf_writer.writerow(features)
-                            traint_writer.writerow(targets)
-                        print("Entries found: " + str(count), end="\r")
+
+            entries = get_subsample(parser, ratio)
+            while len(entries) != 0 and count < size:
+                for entry in entries:
+                    count += 1
+                    features, targets = entry[0], entry[1]
+                    if (count % 10) == 0:
+                        valf_writer.writerow(features)
+                        valt_writer.writerow(targets)
+                    elif (count % 25) == 0:
+                        testf_writer.writerow(features)
+                        testt_writer.writerow(targets)
                     else:
-                        dropped_last_entry = True
-                else:
-                    parser.increment()
+                        trainf_writer.writerow(features)
+                        traint_writer.writerow(targets)
+                    print("Entries found: " + str(count), end="\r")
+                    if count >= size:
+                        break
+
+                entries = get_subsample(parser, ratio)
 
         print("Example entries parsed: " + str(count))
         print("Example features and target values written to csvs in ouput directory.")
@@ -249,4 +271,6 @@ if __name__ == "__main__":
     PARSER = ArgumentParser(description=__doc__, formatter_class=RawTextHelpFormatter)
     PARSER.add_argument("directory", help="Directory with GFED4.1s_yyyy HDF files")
     PARSER.add_argument("--size", type=int, help="No. of entries to extract", default=1000)
-    validate_and_parse(PARSER.parse_args().directory, PARSER.parse_args().size)
+    PARSER.add_argument("--ratio", type=int, help="Min ratio of negative to positive examples", default=-1)
+    ARGS = PARSER.parse_args()
+    validate_and_parse(ARGS.directory, ARGS.size, ARGS.ratio)

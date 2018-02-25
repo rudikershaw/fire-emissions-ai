@@ -4,7 +4,7 @@ Fire Emissions AI is an [artificial neural network](https://en.wikipedia.org/wik
 
 # Quick Start Guide
 
-First you will need a `.csv` file with lines in the following format. Each value should be extracted directly from the GFED to ensure the correct format of individual values.
+It is advised that you run all commands from within the root directory of the project. First you will need a `.csv` file with lines in the following format. Each value should be extracted directly from the GFED to ensure the correct format of individual values.
 
 ```
 [Year],[Month],[Latitude],[Longitude],[Region ID],[BB],[NPP],[Rh],[C],[DM],[Burned Area]
